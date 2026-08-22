@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:5000/api';
+// In production (Vercel), set VITE_API_URL to your Railway backend URL.
+// In local development, it falls back to http://localhost:5000/api automatically.
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:5000/api';
 
 export interface RequestOptions extends RequestInit {
   bodyData?: any;
