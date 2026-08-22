@@ -35,11 +35,12 @@ const io = new SocketIOServer(server, {
 // Setup Socket.io event listeners & auth middleware
 setupSocketIO(io);
 
-// Allow any Vercel deployment URL, localhost (dev), and Railway's own origin
+// Allow any Vercel deployment URL, localhost (dev), Railway, and Render origins
 const allowedOrigins = [
   /^https?:\/\/localhost(:\d+)?$/,          // all localhost ports (dev)
   /^https:\/\/.*\.vercel\.app$/,            // any *.vercel.app deployment
   /^https:\/\/.*\.up\.railway\.app$/,       // Railway preview URLs
+  /^https:\/\/.*\.onrender\.com$/,          // Render preview/production URLs
 ];
 
 // Express Middlewares
@@ -47,6 +48,9 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (server-to-server, curl, Postman)
     if (!origin) return callback(null, true);
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL.replace(/\/+$/, '')) {
+      return callback(null, true);
+    }
     const allowed = allowedOrigins.some((pattern) => pattern.test(origin));
     callback(allowed ? null : new Error(`CORS: origin ${origin} not allowed`), allowed);
   },
