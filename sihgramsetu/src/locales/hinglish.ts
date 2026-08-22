@@ -408,6 +408,19 @@ export const hinglish: Locale = {
     titlePlaceholder: 'Jaise: Mahindra Tractor 575 DI',
     descPlaceholder: 'Apni listing ki details likho...',
     locationPlaceholder: 'Jaise: Karnal, Haryana',
+    // Photo upload
+    photosLabel: 'Photos *',
+    photosRequired: 'Kam se kam 1 photo upload karein',
+    photosOptional: 'Photos (Optional hai)',
+    addPhoto: 'Photo Jodo',
+    photoRequired: 'Kam se kam ek photo upload karein.',
+    // Availability dates
+    availabilityLabel: 'Availability Dates',
+    addDateLabel: 'Tareekh Add Karein',
+    noDateSelected: 'Koi date nahi chuni',
+    invalidDate: 'Sahi date daalein.',
+    duplicateDate: 'Yeh date pehle se add hai.',
+    pastDate: 'Aage ki date chunein.',
   },
 
   emptyState: {

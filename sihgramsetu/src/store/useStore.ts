@@ -22,6 +22,8 @@ export interface Listing {
   location: string;
   status: 'active' | 'inactive';
   imageUrl?: string;
+  images?: string[];
+  availabilityDates?: string[];
   category?: string;
   capacity?: number | null;   // Storage listings: max capacity in tonnes
   stock?: number | null;      // Agri product / crop residue: qty in stock
@@ -29,6 +31,8 @@ export interface Listing {
   dailyPrice?: number | null; // Per-day rate e.g. 3000
   averageRating?: number | null; // Computed from reviews; returned by getListings
   reviewCount?: number;          // Total number of reviews for this listing
+  providerName?: string;         // Name of the provider from provider relation
+  bookedDates?: string[];        // Array of YYYY-MM-DD date strings occupied by active bookings
 }
 
 export interface BazaarPost {
@@ -178,13 +182,17 @@ interface AppState {
   // Recently viewed listing IDs (tracked locally for the current session)
   viewedListingIds: string[];
 
+  providerTab: 'listings' | 'requests' | 'analytics';
+
   // Actions
   setUser: (user: UserProfile | null) => void;
   setAppMode: (mode: AppMode) => void;
+  setProviderTab: (tab: 'listings' | 'requests' | 'analytics') => void;
   setLanguage: (lang: string) => void;
   login: (phone: string, password?: string) => Promise<void>;
   registerUser: (userData: { name: string; phone: string; password?: string; location: string; preferredLanguage?: string }) => Promise<void>;
   fetchProfile: () => Promise<void>;
+  updateProfile: (data: { name?: string; village?: string; state?: string; preferredLanguage?: string; location?: string }) => Promise<void>;
 
   // Listing CRUD Actions
   fetchListings: (params?: { q?: string; type?: string; location?: string }) => Promise<void>;
@@ -251,27 +259,65 @@ interface AppState {
   logout: () => void;
 }
 
-const mapDbBookingToAppBooking = (dbB: any): Booking => ({
-  id: dbB.id,
-  listingId: dbB.listingId,
-  listingTitle: dbB.listing?.title || 'Unknown Asset',
-  listingType: dbB.listing?.type || 'machinery',
-  listingLocation: dbB.listing?.location || '',
-  consumerId: dbB.consumerId,
-  consumerName: dbB.consumer?.name || 'Unknown Consumer',
-  providerId: dbB.providerId,
-  date: new Date(dbB.startDate).toISOString().split('T')[0],
-  endDate: dbB.endDate ? new Date(dbB.endDate).toISOString().split('T')[0] : undefined,
-  quantity: dbB.quantity,
-  unit: dbB.bookingType === 'daily' ? 'per day' : (dbB.listing?.unit || 'per hour'),
-  totalPrice: dbB.totalPrice,
-  bookingType: dbB.bookingType || (dbB.hours ? 'hourly' : 'daily'),
-  hours: dbB.hours ?? undefined,
-  days: dbB.days ?? undefined,
-  rate: dbB.rate ?? undefined,
-  status: dbB.status as BookingStatus,
-  timestamp: new Date(dbB.createdAt).getTime(),
-});
+const mapDbBookingToAppBooking = (dbB: any): Booking => {
+  let dateStr = new Date().toISOString().split('T')[0];
+  if (dbB?.startDate) {
+    try {
+      const d = new Date(dbB.startDate);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toISOString().split('T')[0];
+      }
+    } catch {
+      // keep fallback
+    }
+  }
+
+  let endDateStr: string | undefined = undefined;
+  if (dbB?.endDate) {
+    try {
+      const d = new Date(dbB.endDate);
+      if (!isNaN(d.getTime())) {
+        endDateStr = d.toISOString().split('T')[0];
+      }
+    } catch {
+      // keep undefined
+    }
+  }
+
+  let timestamp = Date.now();
+  if (dbB?.createdAt) {
+    try {
+      const d = new Date(dbB.createdAt);
+      if (!isNaN(d.getTime())) {
+        timestamp = d.getTime();
+      }
+    } catch {
+      // keep fallback
+    }
+  }
+
+  return {
+    id: dbB?.id || `booking_${Math.random().toString(36).substring(2, 9)}`,
+    listingId: dbB?.listingId || '',
+    listingTitle: dbB?.listing?.title || 'Unknown Asset',
+    listingType: dbB?.listing?.type || 'machinery',
+    listingLocation: dbB?.listing?.location || '',
+    consumerId: dbB?.consumerId || '',
+    consumerName: dbB?.consumer?.name || 'Unknown Consumer',
+    providerId: dbB?.providerId || '',
+    date: dateStr,
+    endDate: endDateStr,
+    quantity: dbB?.quantity || 1,
+    unit: dbB?.bookingType === 'daily' ? 'per day' : (dbB?.listing?.unit || 'per hour'),
+    totalPrice: dbB?.totalPrice || 0,
+    bookingType: dbB?.bookingType || (dbB?.hours ? 'hourly' : 'daily'),
+    hours: dbB?.hours ?? undefined,
+    days: dbB?.days ?? undefined,
+    rate: dbB?.rate ?? undefined,
+    status: (dbB?.status as BookingStatus) || 'pending',
+    timestamp,
+  };
+};
 
 export const useStore = create<AppState>()(
   persist(
@@ -280,6 +326,7 @@ export const useStore = create<AppState>()(
       user: null,
       isAuthenticated: false,
       appMode: 'consumer',
+      providerTab: 'listings',
       language: localStorage.getItem('gramsetu_language') ?? null,
       listings: [],
       bazaarPosts: [],
@@ -295,6 +342,7 @@ export const useStore = create<AppState>()(
       // Auth & Settings
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setAppMode: (appMode) => set({ appMode }),
+      setProviderTab: (providerTab) => set({ providerTab }),
       setLanguage: (language) => {
         localStorage.setItem('gramsetu_language', language);
         set({ language });
@@ -399,6 +447,34 @@ export const useStore = create<AppState>()(
         }
       },
 
+      updateProfile: async (data) => {
+        try {
+          const res = await api.put('/auth/profile', data);
+          const locStr = res.user.location || '';
+          const parts = locStr.split(', ');
+          const village = parts[0] || '';
+          const stateName = parts[1] || '';
+
+          const dbLang = res.user.preferredLanguage || get().language || 'hi';
+          if (dbLang) {
+            localStorage.setItem('gramsetu_language', dbLang);
+            set({ language: dbLang });
+          }
+
+          const profile: UserProfile = {
+            id: res.user.id,
+            name: res.user.name,
+            phone: res.user.phone,
+            village,
+            state: stateName,
+            preferredLanguage: dbLang,
+          };
+          set({ user: profile });
+        } catch (err: any) {
+          throw new Error(err.message || 'Update profile failed');
+        }
+      },
+
       // Listing Actions
       fetchListings: async (params?: { q?: string; type?: string; location?: string }) => {
         try {
@@ -409,7 +485,11 @@ export const useStore = create<AppState>()(
 
           const queryString = queryParts.length ? `?${queryParts.join('&')}` : '';
           const res = await api.get(`/listings${queryString}`);
-          set({ listings: res.listings });
+          const mapped = (res.listings || []).map((l: any) => ({
+            ...l,
+            providerName: l.provider?.name || l.providerName || undefined,
+          }));
+          set({ listings: mapped });
         } catch (err) {
           console.error('Fetch listings failed:', err);
         }
@@ -417,7 +497,11 @@ export const useStore = create<AppState>()(
       fetchMyListings: async () => {
         try {
           const res = await api.get('/listings/my-listings');
-          set({ listings: res.listings });
+          const mapped = (res.listings || []).map((l: any) => ({
+            ...l,
+            providerName: l.provider?.name || l.providerName || undefined,
+          }));
+          set({ listings: mapped });
         } catch (err) {
           console.error('Fetch my listings failed:', err);
         }
@@ -652,6 +736,8 @@ export const useStore = create<AppState>()(
           const res = await api.post('/bookings', bookingData);
           const mapped = mapDbBookingToAppBooking(res.booking);
           set((state) => ({ bookings: [mapped, ...state.bookings] }));
+          // Re-fetch listings to immediately update availability & booked dates across app
+          get().fetchListings();
         } catch (err: any) {
           throw new Error(err.message || 'Add booking failed');
         }
@@ -774,7 +860,11 @@ export const useStore = create<AppState>()(
       fetchNotifications: async () => {
         try {
           const res = await api.get('/notifications');
-          set({ notifications: res.notifications });
+          const mapped = (res.notifications || []).map((n: any) => ({
+            ...n,
+            timestamp: n.createdAt ? new Date(n.createdAt).getTime() : Date.now(),
+          }));
+          set({ notifications: mapped });
         } catch (err) {
           console.error('Fetch notifications error:', err);
         }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sprout, Save, Sparkles, Warehouse, Leaf, ShoppingBag, Tractor, Users } from 'lucide-react';
+import { X, Sprout, Save, Sparkles, Warehouse, Leaf, ShoppingBag, Tractor, Users, Camera, Calendar, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Listing } from '../store/useStore';
 import { useStore } from '../store/useStore';
 import { generatePriceSuggestion } from '../utils/aiInsights';
+import { useTranslation } from '../locales/useTranslation';
 
 type ListingType = 'machinery' | 'labor' | 'crop_residue' | 'storage' | 'agri_product';
 type UnitType = 'per hour' | 'per day' | 'per quintal' | 'per tonne' | 'per kg' | 'per unit';
@@ -105,6 +106,7 @@ export const ListingForm: React.FC<ListingFormProps> = ({
   onClose,
 }) => {
   const user = useStore((state) => state.user);
+  const { t } = useTranslation();
 
   const [type, setType] = useState<ListingType>('machinery');
   const [title, setTitle] = useState('');
@@ -118,7 +120,15 @@ export const ListingForm: React.FC<ListingFormProps> = ({
   const [category, setCategory] = useState('');
   const [capacity, setCapacity] = useState('');
   const [stock, setStock] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [availabilityDates, setAvailabilityDates] = useState<string[]>([]);
+  const [manualDateInput, setManualDateInput] = useState('');
   const [error, setError] = useState('');
+
+  // Calendar navigation state
+  const today = new Date();
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-indexed
 
   // AI Price Suggestion state
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -160,10 +170,110 @@ export const ListingForm: React.FC<ListingFormProps> = ({
       setCategory(initialListing.category ?? '');
       setCapacity(initialListing.capacity != null ? String(initialListing.capacity) : '');
       setStock(initialListing.stock != null ? String(initialListing.stock) : '');
+      
+      if (initialListing.images && Array.isArray(initialListing.images) && initialListing.images.length > 0) {
+        setImages(initialListing.images);
+      } else if (initialListing.imageUrl) {
+        setImages([initialListing.imageUrl]);
+      } else {
+        setImages([]);
+      }
+
+      if (initialListing.availabilityDates && Array.isArray(initialListing.availabilityDates)) {
+        setAvailabilityDates(initialListing.availabilityDates);
+      } else {
+        setAvailabilityDates([]);
+      }
     } else if (user) {
       setLocation(`${user.village}, ${user.state}`);
     }
   }, [initialListing, user]);
+
+  // Image Upload Handler
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+
+    fileList.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          // Resize image on canvas to save space
+          const img = new Image();
+          img.src = result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > maxDim) {
+                height *= maxDim / width;
+                width = maxDim;
+              }
+            } else {
+              if (height > maxDim) {
+                width *= maxDim / height;
+                height = maxDim;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+            setImages((prev) => {
+              if (prev.length >= 5) return prev;
+              return [...prev, resizedDataUrl];
+            });
+            if (error) setError('');
+          };
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Availability Date handlers
+  const handleAddManualDate = () => {
+    if (!manualDateInput) return;
+    const formattedDate = manualDateInput.trim();
+    
+    if (availabilityDates.includes(formattedDate)) {
+      setError(t('listingForm.duplicateDate') || 'यह तारीख पहले से जोड़ी जा चुकी है।');
+      return;
+    }
+
+    setAvailabilityDates((prev) => [...prev, formattedDate].sort());
+    setManualDateInput('');
+    if (error) setError('');
+  };
+
+  const handleToggleCalendarDate = (dateStr: string) => {
+    if (availabilityDates.includes(dateStr)) {
+      setAvailabilityDates((prev) => prev.filter((d) => d !== dateStr));
+    } else {
+      setAvailabilityDates((prev) => [...prev, dateStr].sort());
+    }
+    if (error) setError('');
+  };
+
+  const handleRemoveAvailabilityDate = (dateStr: string) => {
+    setAvailabilityDates((prev) => prev.filter((d) => d !== dateStr));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,6 +291,13 @@ export const ListingForm: React.FC<ListingFormProps> = ({
       setError('कृपया स्थान/पता दर्ज करें (Please enter location)');
       return;
     }
+
+    // MANDATORY PHOTO VALIDATION: ALL CATEGORIES EXCEPT LABOR MUST HAVE AT LEAST 1 PHOTO
+    if (type !== 'labor' && images.length === 0) {
+      setError(t('listingForm.photoRequired') || 'कम से कम एक फोटो अपलोड करें।');
+      return;
+    }
+
     if (config.showCapacity && capacity && isNaN(parseFloat(capacity))) {
       setError('कृपया सही क्षमता दर्ज करें (Please enter a valid capacity)');
       return;
@@ -208,7 +325,45 @@ export const ListingForm: React.FC<ListingFormProps> = ({
       category: category.trim() || undefined,
       capacity: config.showCapacity && capacity ? parseFloat(capacity) : null,
       stock: config.showStock && stock ? parseFloat(stock) : null,
+      imageUrl: images[0] || undefined,
+      images,
+      availabilityDates,
     } as any);
+  };
+
+  // Calendar Calculations
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const daysInMonth = getDaysInMonth(calYear, calMonth);
+  const firstDay = getFirstDayOfMonth(calYear, calMonth);
+
+  const prevMonth = () => {
+    if (calMonth === 0) {
+      setCalMonth(11);
+      setCalYear(calYear - 1);
+    } else {
+      setCalMonth(calMonth - 1);
+    }
+  };
+
+  const nextMonth = () => {
+    if (calMonth === 11) {
+      setCalMonth(0);
+      setCalYear(calYear + 1);
+    } else {
+      setCalMonth(calMonth + 1);
+    }
   };
 
   const TYPE_BUTTONS: ListingType[] = ['machinery', 'labor', 'crop_residue', 'storage', 'agri_product'];
@@ -280,6 +435,50 @@ export const ListingForm: React.FC<ListingFormProps> = ({
           </p>
         </div>
 
+        {/* PHOTO UPLOAD SECTION */}
+        <div className="p-4 bg-cream-50 border border-cream-800 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-extrabold text-earth-800 uppercase tracking-wider">
+              {type === 'labor' ? t('listingForm.photosOptional') || 'Photos (Optional)' : t('listingForm.photosLabel') || 'Photos *'}
+            </label>
+            <span className="text-[11px] font-semibold text-earth-500">
+              {type === 'labor' ? 'वैकल्पिक (Optional)' : t('listingForm.photosRequired') || 'Upload at least 1 photo'}
+            </span>
+          </div>
+
+          {/* Photo Previews + Add Button Grid */}
+          <div className="grid grid-cols-4 gap-2.5 pt-1">
+            {images.map((imgSrc, idx) => (
+              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-cream-800 bg-earth-900/5 group shadow-xs">
+                <img src={imgSrc} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow-md hover:bg-red-700 transition-colors"
+                  aria-label="Remove photo"
+                >
+                  <X className="w-3 h-3 stroke-[3]" />
+                </button>
+              </div>
+            ))}
+
+            {images.length < 5 && (
+              <label htmlFor="photo-upload-input" className="aspect-square rounded-xl border-2 border-dashed border-earth-300 hover:border-rural-green-600 bg-cream-100/50 hover:bg-rural-green-50/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all active:scale-95 text-earth-600 hover:text-rural-green-800">
+                <Camera className="w-5 h-5" />
+                <span className="text-[9px] font-extrabold uppercase tracking-wider">{t('listingForm.addPhoto') || 'Add Photo'}</span>
+                <input
+                  id="photo-upload-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
         {/* Category sub-picker (only for types that support it) */}
         {config.showCategory && config.categories.length > 0 && (
           <div>
@@ -333,6 +532,119 @@ export const ListingForm: React.FC<ListingFormProps> = ({
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-3 bg-cream-50 border border-cream-800 focus:border-rural-green-600 rounded-xl outline-none font-medium text-earth-950 text-sm transition-colors resize-none"
           />
+        </div>
+
+        {/* AVAILABILITY DATES SECTION (Manual + Calendar) */}
+        <div className="p-4 bg-cream-50 border border-cream-800 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-extrabold text-earth-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-rural-green-800" />
+              {t('listingForm.availabilityLabel') || 'Availability Dates'}
+            </label>
+            <span className="text-[11px] font-bold text-rural-green-800">
+              {availabilityDates.length} {availabilityDates.length === 1 ? 'Date' : 'Dates'} Selected
+            </span>
+          </div>
+
+          {/* Selected Date Badges / Chips */}
+          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-cream-100/60 rounded-xl border border-cream-800">
+            {availabilityDates.length === 0 ? (
+              <span className="text-xs text-earth-450 italic pl-1">{t('listingForm.noDateSelected') || 'No dates selected (Available anytime)'}</span>
+            ) : (
+              availabilityDates.map((dStr) => (
+                <span key={dStr} className="inline-flex items-center gap-1 px-2.5 py-1 bg-rural-green-800 text-cream-50 rounded-lg text-xs font-bold shadow-2xs">
+                  {dStr}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAvailabilityDate(dStr)}
+                    className="hover:text-red-300 transition-colors ml-0.5 outline-none"
+                  >
+                    <X className="w-3 h-3 stroke-[3]" />
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+
+          {/* Manual Date Input Row */}
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="date"
+              value={manualDateInput}
+              onChange={(e) => setManualDateInput(e.target.value)}
+              className="flex-1 px-3 py-2 bg-cream-50 border border-cream-800 focus:border-rural-green-600 rounded-xl outline-none font-semibold text-earth-900 text-xs"
+            />
+            <button
+              type="button"
+              onClick={handleAddManualDate}
+              disabled={!manualDateInput}
+              className="px-3.5 py-2 bg-rural-green-800 hover:bg-rural-green-900 disabled:opacity-50 text-cream-50 font-bold rounded-xl text-xs flex items-center gap-1 transition-all active:scale-95 outline-none"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              {t('listingForm.addDateLabel') || 'Add Date'}
+            </button>
+          </div>
+
+          {/* Interactive Multi-Select Calendar */}
+          <div className="pt-2 border-t border-cream-800/60">
+            {/* Calendar Header: Month + Year Switcher */}
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-xs font-extrabold text-earth-900 uppercase tracking-wide">
+                {monthNames[calMonth]} {calYear}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  className="p-1 rounded-lg bg-cream-100 hover:bg-cream-200 text-earth-700 transition-colors outline-none"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="p-1 rounded-lg bg-cream-100 hover:bg-cream-200 text-earth-700 transition-colors outline-none"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Days of Week Row */}
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-earth-450 uppercase mb-1">
+              <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: firstDay }).map((_, i) => (
+                <div key={`empty-${i}`} className="h-8" />
+              ))}
+
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dayNum = i + 1;
+                const monthStr = String(calMonth + 1).padStart(2, '0');
+                const dayStr = String(dayNum).padStart(2, '0');
+                const isoDate = `${calYear}-${monthStr}-${dayStr}`;
+                const isSelected = availabilityDates.includes(isoDate);
+
+                return (
+                  <button
+                    key={isoDate}
+                    type="button"
+                    onClick={() => handleToggleCalendarDate(isoDate)}
+                    className={`h-8 rounded-lg text-xs font-bold transition-all outline-none flex items-center justify-center ${
+                      isSelected
+                        ? 'bg-rural-green-800 text-cream-50 shadow-xs scale-105'
+                        : 'bg-cream-100/60 hover:bg-cream-200/80 text-earth-800'
+                    }`}
+                  >
+                    {dayNum}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Rental Pricing Grid — Hourly & Daily Prices for machinery and labor */}

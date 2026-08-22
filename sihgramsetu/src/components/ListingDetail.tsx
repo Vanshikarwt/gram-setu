@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Tractor, UserCheck, MapPin, Clock, IndianRupee, MessageCircle, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Tractor, UserCheck, MapPin, Clock, IndianRupee, MessageCircle, Star, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { BookingModal } from './BookingModal';
 import type { Listing } from '../store/useStore';
+import { api } from '../utils/api';
 
 interface ListingDetailProps {
   listing: Listing;
@@ -12,17 +13,40 @@ interface ListingDetailProps {
 
 export const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onClose }) => {
   const navigate = useNavigate();
-  const { user, getOrCreateConversation, setOpenConversationId, reviews } = useStore();
+  const { user, startConversationWithUser, reviews: storeReviews } = useStore();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [apiReviews, setApiReviews] = useState<any[]>([]);
 
-  // ── Reviews & rating ────────────────────────────────────────────────────────
-  const listingReviews = reviews
-    .filter((r) => r.listingId === listing.id)
-    .sort((a, b) => b.timestamp - a.timestamp);
+  // Fetch backend reviews for this listing
+  useEffect(() => {
+    api.get(`/listings/${listing.id}/reviews`).then((res) => {
+      if (res.reviews) {
+        setApiReviews(res.reviews);
+      }
+    }).catch((err) => console.error('Failed to fetch listing reviews:', err));
+  }, [listing.id]);
+
+  // Combine API reviews & store reviews (deduplicated)
+  const combinedReviews = [...apiReviews];
+  storeReviews.filter((r) => r.listingId === listing.id).forEach((sr) => {
+    if (!combinedReviews.some((ar) => ar.id === sr.id || ar.bookingId === sr.bookingId)) {
+      combinedReviews.push({
+        id: sr.id,
+        consumerName: sr.consumerName,
+        rating: sr.rating,
+        comment: sr.comment,
+        createdAt: new Date(sr.timestamp).toISOString(),
+      });
+    }
+  });
+
+  const listingReviews = combinedReviews.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const avgRating = listingReviews.length
     ? listingReviews.reduce((sum, r) => sum + r.rating, 0) / listingReviews.length
-    : 0;
+    : (listing.averageRating || 0);
 
   const renderStars = (rating: number, size = 'w-4 h-4') =>
     [1, 2, 3, 4, 5].map((s) => (
@@ -39,17 +63,17 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onClose }
   const Icon = listing.type === 'machinery' ? Tractor : UserCheck;
   const typeLabel = listing.type === 'machinery' ? 'कृषि उपकरण (Machinery)' : 'कृषि श्रम (Labor)';
 
-  const providerName = `Provider #${listing.providerId.slice(-4)}`;
+  const providerName = listing.providerName || `Provider #${listing.providerId.slice(-4)}`;
 
-  const handleChatWithProvider = () => {
+  const handleChatWithProvider = async () => {
     if (!user) return;
-    // Don't open a chat if this is the user's own listing
     if (listing.providerId === user.id) return;
 
-    const convId = getOrCreateConversation(listing.providerId, providerName);
-    setOpenConversationId(convId);
-    onClose();
-    navigate('/chat');
+    const convId = await startConversationWithUser(listing.providerId);
+    if (convId) {
+      onClose();
+      navigate('/chat');
+    }
   };
 
   const isOwnListing = user?.id === listing.providerId;
@@ -147,6 +171,54 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onClose }
           </div>
         )}
 
+        {/* Dynamic Resource Availability Section */}
+        <div className="bg-cream-50 border border-cream-800 rounded-3xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-rural-green-800" />
+              <h3 className="font-extrabold text-sm text-earth-900 uppercase tracking-wide">
+                📅 उपलब्धता (Resource Availability)
+              </h3>
+            </div>
+            {listing.availabilityDates && listing.availabilityDates.length > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rural-green-100 text-rural-green-800 border border-rural-green-200">
+                {listing.availabilityDates.filter((d) => !(listing.bookedDates || []).includes(d)).length} दिन उपलब्ध
+              </span>
+            )}
+          </div>
+
+          {listing.availabilityDates && listing.availabilityDates.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              <p className="text-xs text-earth-600 font-medium">
+                उपलब्ध और बुक की गई तिथियां (Available & booked dates):
+              </p>
+              <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
+                {listing.availabilityDates.map((dStr) => {
+                  const isBooked = (listing.bookedDates || []).includes(dStr);
+                  const formattedDate = new Date(dStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                  return (
+                    <span
+                      key={dStr}
+                      className={`text-xs font-extrabold px-3 py-1.5 rounded-xl border flex items-center gap-1 transition-all ${
+                        isBooked
+                          ? 'bg-red-50 text-red-700 border-red-200 line-through opacity-75'
+                          : 'bg-rural-green-100 text-rural-green-900 border-rural-green-300 shadow-xs'
+                      }`}
+                    >
+                      {isBooked ? '❌' : '✅'} {formattedDate}
+                      {isBooked && <span className="text-[9px] no-underline font-normal text-red-600 bg-white px-1 rounded ml-1">Booked</span>}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-earth-500 font-medium italic">
+              इस संसाधन के लिए सभी तिथियां खुली हैं (All dates open for booking).
+            </p>
+          )}
+        </div>
+
         {/* Location */}
         <div className="bg-cream-50 border border-cream-800 rounded-2xl p-4 flex items-center gap-3">
           <div className="p-2.5 bg-rural-green-100 text-rural-green-800 rounded-xl">
@@ -196,9 +268,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onClose }
                 <div key={review.id} className="bg-cream-100 rounded-2xl p-3.5 border border-cream-200">
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <div>
-                      <p className="text-xs font-extrabold text-earth-900">{review.consumerName}</p>
+                      <p className="text-xs font-extrabold text-earth-900">{review.consumer?.name || review.consumerName || 'Kisan User'}</p>
                       <p className="text-[10px] text-earth-400 font-medium">
-                        {new Date(review.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(review.createdAt || review.timestamp || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">

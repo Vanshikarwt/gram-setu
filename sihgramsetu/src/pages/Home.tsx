@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Tractor, Leaf, HardHat, Warehouse, Package,
   SlidersHorizontal, X, Star, CalendarDays, Inbox, Plus,
-  ChevronRight, Loader2, MapPin, Navigation, ArrowLeft,
+  ChevronRight, Loader2, MapPin, Navigation, ArrowLeft, BarChart3,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { FriendlyEmptyState } from '../components/FriendlyEmptyState';
@@ -378,6 +378,8 @@ const Home: React.FC = () => {
     fetchIncomingRequests,
     viewedListingIds,
     addViewedListing,
+    providerTab,
+    setProviderTab,
   } = useStore();
   const { t } = useTranslation();
 
@@ -393,9 +395,6 @@ const Home: React.FC = () => {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<ActiveFilters>(DEFAULT_FILTERS);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Provider dashboard tab
-  const [providerTab, setProviderTab] = useState<'listings' | 'requests'>('listings');
 
   const hasActiveFilters =
     appliedFilters.minPrice !== '' ||
@@ -419,6 +418,7 @@ const Home: React.FC = () => {
       } else if (providerTab === 'requests') {
         fetchIncomingRequests();
       }
+      // 'analytics' tab: no extra fetch needed — ProviderAnalytics fetches its own data
     }
   }, [appMode, consumerTab, providerTab, fetchListings, fetchMyListings, fetchMyRequests, fetchIncomingRequests]);
 
@@ -529,26 +529,11 @@ const Home: React.FC = () => {
   const handleSaveListing = async (listingData: Omit<Listing, 'id' | 'providerId'> & { id?: string }) => {
     if (!user) return;
     try {
-      if (listingData.id) {
-        await updateListing(listingData.id, {
-          type: listingData.type,
-          title: listingData.title,
-          description: listingData.description,
-          price: listingData.price,
-          unit: listingData.unit,
-          location: listingData.location,
-          status: listingData.status,
-        });
+      const { id, ...dataToSave } = listingData;
+      if (id) {
+        await updateListing(id, dataToSave);
       } else {
-        await addListing({
-          type: listingData.type,
-          title: listingData.title,
-          description: listingData.description,
-          price: listingData.price,
-          unit: listingData.unit,
-          location: listingData.location,
-          status: listingData.status,
-        });
+        await addListing(dataToSave);
       }
       setShowForm(false);
       setEditingListing(null);
@@ -915,35 +900,34 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {/* Provider Analytics — KPI cards */}
-      <ProviderAnalytics />
-
       {/* Provider Tab Switcher */}
-      <div className="flex gap-2 px-4 mb-4">
-        <button
-          onClick={() => setProviderTab('listings')}
-          type="button"
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-sm transition-all outline-none ${
-            providerTab === 'listings'
-              ? 'bg-rural-green-800 text-cream-50 shadow-sm'
-              : 'bg-cream-100 text-earth-600 border border-cream-800'
-          }`}
-        >
-          🚜 {t('home.listingsTab')}
-        </button>
-        <button
-          onClick={() => setProviderTab('requests')}
-          type="button"
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-sm transition-all outline-none ${
-            providerTab === 'requests'
-              ? 'bg-rural-green-800 text-cream-50 shadow-sm'
-              : 'bg-cream-100 text-earth-600 border border-cream-800'
-          }`}
-        >
-          <Inbox className="w-4 h-4" />
-          {t('home.requestsTab')}
-        </button>
-      </div>
+      {providerTab !== 'analytics' && (
+        <div className="flex gap-2 px-4 mb-4">
+          <button
+            onClick={() => setProviderTab('listings')}
+            type="button"
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-sm transition-all outline-none ${
+              providerTab === 'listings'
+                ? 'bg-rural-green-800 text-cream-50 shadow-sm'
+                : 'bg-cream-100 text-earth-600 border border-cream-800'
+            }`}
+          >
+            🚜 {t('home.listingsTab')}
+          </button>
+          <button
+            onClick={() => setProviderTab('requests')}
+            type="button"
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-bold text-sm transition-all outline-none ${
+              providerTab === 'requests'
+                ? 'bg-rural-green-800 text-cream-50 shadow-sm'
+                : 'bg-cream-100 text-earth-600 border border-cream-800'
+            }`}
+          >
+            <Inbox className="w-4 h-4" />
+            {t('home.requestsTab')}
+          </button>
+        </div>
+      )}
 
       {/* ── My Listings Tab ── */}
       {providerTab === 'listings' && (
@@ -978,6 +962,13 @@ const Home: React.FC = () => {
       {providerTab === 'requests' && (
         <div className="flex-1 overflow-y-auto px-4 pb-6">
           <IncomingRequests />
+        </div>
+      )}
+
+      {/* ── My Analytics Tab ── */}
+      {providerTab === 'analytics' && (
+        <div className="flex-1 overflow-y-auto pb-6">
+          <ProviderAnalytics showForecasting showIdleStats />
         </div>
       )}
 

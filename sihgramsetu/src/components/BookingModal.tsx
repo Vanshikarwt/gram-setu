@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, CalendarDays, Clock, IndianRupee, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, CalendarDays, Clock, IndianRupee, CheckCircle, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Listing } from '../store/useStore';
 import { useTranslation } from '../locales/useTranslation';
@@ -17,14 +17,36 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDateStr = tomorrow.toISOString().split('T')[0];
 
-  // Selected dates list — default to 1 date
-  const [selectedDates, setSelectedDates] = useState<string[]>([minDateStr]);
+  const bookedSet = useMemo(() => new Set(listing.bookedDates || []), [listing.bookedDates]);
+  const configuredDates = listing.availabilityDates || [];
+
+  // Generate candidate dates list
+  const calendarDates = useMemo(() => {
+    if (configuredDates.length > 0) {
+      return configuredDates;
+    }
+    const dates: string[] = [];
+    const cur = new Date();
+    cur.setDate(cur.getDate() + 1);
+    for (let i = 0; i < 15; i++) {
+      dates.push(cur.toISOString().split('T')[0]);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return dates;
+  }, [configuredDates]);
+
+  // Selected dates list — default to first available non-booked date
+  const [selectedDates, setSelectedDates] = useState<string[]>(() => {
+    const firstAvailable = calendarDates.find((d) => !bookedSet.has(d));
+    return firstAvailable ? [firstAvailable] : [minDateStr];
+  });
+
   const [hours, setHours] = useState<number>(4);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Determine rates
+  // Rates
   const hourlyRate = listing.hourlyPrice ?? listing.price;
   const dailyRate = listing.dailyPrice ?? (listing.hourlyPrice ? listing.hourlyPrice * 6 : listing.price * 6);
 
@@ -35,29 +57,54 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
   // Price Calculation
   const totalPrice = isHourlyMode ? hourlyRate * hours : dailyRate * numDays;
 
+  // Toggle date selection via Calendar Grid
+  const handleToggleDatePill = (dStr: string) => {
+    if (bookedSet.has(dStr)) {
+      setError('Selected date is unavailable.');
+      return;
+    }
+
+    if (selectedDates.includes(dStr)) {
+      if (selectedDates.length === 1) return; // Keep at least 1 date
+      setSelectedDates(selectedDates.filter((d) => d !== dStr));
+      setError('');
+    } else {
+      const newSelection = [...selectedDates, dStr].sort();
+      const start = newSelection[0];
+      const end = newSelection[newSelection.length - 1];
+      
+      // Check if range contains any booked dates
+      const hasBookedInRange = calendarDates.some(
+        (d) => d >= start && d <= end && bookedSet.has(d)
+      );
+
+      if (hasBookedInRange) {
+        setError('Please select only available dates.');
+        return;
+      }
+      setSelectedDates(newSelection);
+      setError('');
+    }
+  };
+
   // Add date handler
   const handleAddDate = () => {
     const lastDateStr = selectedDates[selectedDates.length - 1] || minDateStr;
-    const nextDate = new Date(lastDateStr);
-    nextDate.setDate(nextDate.getDate() + 1);
-    const nextDateStr = nextDate.toISOString().split('T')[0];
-    if (!selectedDates.includes(nextDateStr)) {
-      setSelectedDates([...selectedDates, nextDateStr]);
+    const availableFutureDate = calendarDates.find(
+      (d) => d > lastDateStr && !selectedDates.includes(d) && !bookedSet.has(d)
+    );
+
+    if (availableFutureDate) {
+      setSelectedDates([...selectedDates, availableFutureDate].sort());
+      setError('');
     } else {
-      // Find first available future date
-      let check = new Date();
-      check.setDate(check.getDate() + 1);
-      while (selectedDates.includes(check.toISOString().split('T')[0])) {
-        check.setDate(check.getDate() + 1);
-      }
-      setSelectedDates([...selectedDates, check.toISOString().split('T')[0]]);
+      setError('No more available dates to add.');
     }
-    setError('');
   };
 
   // Remove date handler
   const handleRemoveDate = (index: number) => {
-    if (selectedDates.length <= 1) return; // Keep at least 1 date
+    if (selectedDates.length <= 1) return;
     const updated = selectedDates.filter((_, i) => i !== index);
     setSelectedDates(updated);
     setError('');
@@ -65,10 +112,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
 
   // Update specific date
   const handleDateChange = (index: number, val: string) => {
+    if (bookedSet.has(val)) {
+      setError('Selected date is unavailable.');
+      return;
+    }
     const updated = [...selectedDates];
     updated[index] = val;
-    // Deduplicate and sort dates chronologically
     const sorted = Array.from(new Set(updated)).sort();
+    
+    // Validate range does not bridge across booked dates
+    const start = sorted[0];
+    const end = sorted[sorted.length - 1];
+    const hasBookedInRange = calendarDates.some(
+      (d) => d >= start && d <= end && bookedSet.has(d)
+    );
+
+    if (hasBookedInRange) {
+      setError('Please select only available dates.');
+      return;
+    }
+
     setSelectedDates(sorted);
     setError('');
   };
@@ -81,6 +144,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
       setError(t('validation.dateRequired'));
       return;
     }
+
+    // Final pre-submit availability check
+    const hasUnavailable = selectedDates.some((d) => bookedSet.has(d));
+    if (hasUnavailable) {
+      setError('Sorry, some of the selected dates are no longer available. Please select another date.');
+      return;
+    }
+
     if (isHourlyMode && hours < 1) {
       setError(t('validation.quantityMin'));
       return;
@@ -102,7 +173,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
       });
       setSubmitted(true);
     } catch (err: any) {
-      setError(err.message || t('booking.failed'));
+      setError(err.message || 'Sorry, some of the selected dates are no longer available. Please select another date.');
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +251,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-base text-earth-900">{t('booking.bookNow')}</h3>
-              {/* Dynamic Mode Badge */}
               <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
                 isHourlyMode
                   ? 'bg-blue-50 text-blue-800 border-blue-200'
@@ -203,16 +273,58 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[78vh] overflow-y-auto">
           {error && (
-            <div className="p-3 bg-harvest-orange/10 border border-harvest-orange/20 rounded-xl text-xs font-semibold text-harvest-orange-dark">
-              ⚠️ {error}
+            <div className="p-3 bg-harvest-orange/10 border border-harvest-orange/20 rounded-xl text-xs font-semibold text-harvest-orange-dark flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Date Picker Section */}
+          {/* Interactive Calendar Date Picker Grid */}
+          <div className="bg-cream-100/70 border border-cream-800/60 p-3.5 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-extrabold text-earth-800 uppercase tracking-wider">
+                <CalendarDays className="w-3.5 h-3.5 text-rural-green-800" />
+                Select Dates (📅 कैलेंडर से चुनें)
+              </label>
+              <span className="text-[10px] text-earth-500 font-bold">
+                {selectedDates.length} selected
+              </span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5 max-h-44 overflow-y-auto p-1">
+              {calendarDates.map((dStr) => {
+                const isBooked = bookedSet.has(dStr);
+                const isSelected = selectedDates.includes(dStr);
+                const formattedDate = new Date(dStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+                return (
+                  <button
+                    key={dStr}
+                    type="button"
+                    disabled={isBooked}
+                    onClick={() => handleToggleDatePill(dStr)}
+                    className={`py-2 px-1 rounded-xl text-[11px] font-extrabold border transition-all text-center flex flex-col items-center justify-center outline-none ${
+                      isBooked
+                        ? 'bg-red-50 text-red-600 border-red-200 line-through opacity-60 cursor-not-allowed pointer-events-none'
+                        : isSelected
+                        ? 'bg-rural-green-800 text-cream-50 border-rural-green-900 shadow-sm scale-105'
+                        : 'bg-cream-50 text-earth-850 border-cream-800 hover:border-rural-green-600'
+                    }`}
+                  >
+                    <span>{formattedDate}</span>
+                    <span className={`text-[9px] font-semibold ${isBooked ? 'text-red-500' : isSelected ? 'text-cream-50/80' : 'text-earth-400'}`}>
+                      {isBooked ? 'Booked' : isSelected ? '✓ Selected' : 'Available'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Manual Date Inputs */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-earth-500 uppercase tracking-wider">
-                <CalendarDays className="w-3.5 h-3.5" />
                 {t('booking.selectDates')} *
               </label>
               <button
@@ -253,7 +365,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
 
           {/* Dynamic Section: Hourly Selector vs Daily Mode Summary */}
           {isHourlyMode ? (
-            /* CASE 1: Exactly ONE date selected -> SHOW Hourly duration selector */
             <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <label htmlFor="bk-hours" className="flex items-center gap-1.5 text-xs font-extrabold text-blue-900 uppercase tracking-wider">
@@ -287,7 +398,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
               </div>
             </div>
           ) : (
-            /* CASE 2: MULTIPLE dates selected -> HIDE Hours selector, SHOW Daily rate */
             <div className="p-4 bg-purple-50/50 border border-purple-200 rounded-2xl flex items-center justify-between">
               <div>
                 <span className="text-xs font-extrabold text-purple-900 uppercase tracking-wider block">

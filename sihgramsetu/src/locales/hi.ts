@@ -408,6 +408,19 @@ export const hi: Locale = {
     titlePlaceholder: 'जैसे: महिंद्रा ट्रैक्टर 575 DI',
     descPlaceholder: 'अपनी लिस्टिंग का विवरण दें...',
     locationPlaceholder: 'जैसे: करनाल, हरियाणा',
+    // Photo upload
+    photosLabel: 'फ़ोटो *',
+    photosRequired: 'कम से कम 1 फ़ोटो अपलोड करें',
+    photosOptional: 'फ़ोटो (वैकल्पिक)',
+    addPhoto: 'फ़ोटो जोड़ें',
+    photoRequired: 'कृपया कम से कम एक फ़ोटो अपलोड करें।',
+    // Availability dates
+    availabilityLabel: 'उपलब्धता की तारीखें',
+    addDateLabel: 'तारीख जोड़ें',
+    noDateSelected: 'कोई तारीख नहीं चुनी',
+    invalidDate: 'कृपया सही तारीख दर्ज करें।',
+    duplicateDate: 'यह तारीख पहले से जोड़ी जा चुकी है।',
+    pastDate: 'कृपया आगे की तारीख चुनें।',
   },
 
   emptyState: {

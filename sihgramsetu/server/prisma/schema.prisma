@@ -39,6 +39,8 @@ model Listing {
   location    String
   status      String    @default("active") // 'active' | 'inactive'
   imageUrl    String?
+  images      String?   // JSON-stringified string[] of base64/URL images
+  availabilityDates String? // JSON-stringified string[] of YYYY-MM-DD availability dates
   category    String?   // sub-category within type (e.g. 'wheat', 'paddy', 'cold-storage', 'seed')
   capacity    Float?    // for 'storage' listings: max capacity in tonnes
   stock       Float?    // for 'agri_product' / 'crop_residue' listings: qty in stock

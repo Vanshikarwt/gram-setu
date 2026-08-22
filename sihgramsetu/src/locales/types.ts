@@ -441,6 +441,19 @@ export interface Locale {
     titlePlaceholder: string;
     descPlaceholder: string;
     locationPlaceholder: string;
+    // Photo upload
+    photosLabel: string;
+    photosRequired: string;
+    photosOptional: string;
+    addPhoto: string;
+    photoRequired: string;
+    // Availability dates
+    availabilityLabel: string;
+    addDateLabel: string;
+    noDateSelected: string;
+    invalidDate: string;
+    duplicateDate: string;
+    pastDate: string;
   };
 
   // ── Empty States ─────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tractor, UserCheck, MapPin, ChevronRight, Leaf, Warehouse, ShoppingBag, Package, Star } from 'lucide-react';
+import { Tractor, UserCheck, MapPin, ChevronRight, Leaf, Warehouse, ShoppingBag, Package, Star, CalendarDays } from 'lucide-react';
 import type { Listing } from '../store/useStore';
 import { useTranslation } from '../locales/useTranslation';
 
@@ -107,6 +107,14 @@ export const ConsumerListingCard: React.FC<ConsumerListingCardProps> = ({ listin
             <div className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200">
               <Warehouse className="w-3 h-3" />
               क्षमता: {listing.capacity} टन
+            </div>
+          )}
+
+          {/* Availability badge */}
+          {listing.availabilityDates && listing.availabilityDates.length > 0 && (
+            <div className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-rural-green-50 text-rural-green-800 border border-rural-green-200">
+              <CalendarDays className="w-3 h-3" />
+              <span>उपलब्ध: {listing.availabilityDates.filter((d) => !(listing.bookedDates || []).includes(d)).length} दिन ({listing.bookedDates?.length || 0} बुक)</span>
             </div>
           )}
 

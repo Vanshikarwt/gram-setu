@@ -90,6 +90,21 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       finalQuantity = numDays;
     }
 
+    // Provider Availability validation check (if provider specified availability dates)
+    if (listing.availabilityDates) {
+      try {
+        const availDatesArr: string[] = JSON.parse(listing.availabilityDates);
+        if (Array.isArray(availDatesArr) && availDatesArr.length > 0) {
+          const isAvailable = datesList.every((dStr) => availDatesArr.includes(dStr));
+          if (!isAvailable) {
+            return res.status(400).json({ error: 'Sorry, some of the selected dates are no longer available. Please select another date.' });
+          }
+        }
+      } catch {
+        // ignore parse error if malformed
+      }
+    }
+
     // Availability validation check — prevent conflicting non-rejected bookings
     const existingConflicts = await prisma.booking.findMany({
       where: {
@@ -105,7 +120,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     });
 
     if (isConflict) {
-      return res.status(400).json({ error: 'Resource is not available on one or more of the selected dates' });
+      return res.status(400).json({ error: 'Sorry, some of the selected dates are no longer available. Please select another date.' });
     }
 
     const booking = await prisma.booking.create({
@@ -246,6 +261,41 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         error: `Invalid transition: cannot move booking from '${existingBooking.status}' to '${status}'`,
       });
+    }
+
+    if (status === 'accepted' && existingBooking.status === 'pending') {
+      const bStartStr = new Date(existingBooking.startDate).toISOString().split('T')[0];
+      const bEndStr = existingBooking.endDate
+        ? new Date(existingBooking.endDate).toISOString().split('T')[0]
+        : bStartStr;
+
+      const requestDates: string[] = [];
+      const cur = new Date(bStartStr);
+      const end = new Date(bEndStr);
+      while (cur <= end) {
+        requestDates.push(cur.toISOString().split('T')[0]);
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const confirmedConflicts = await prisma.booking.findMany({
+        where: {
+          listingId: existingBooking.listingId,
+          id: { not: existingBooking.id },
+          status: { in: ['accepted', 'paid', 'active'] },
+        },
+      });
+
+      const hasConflict = confirmedConflicts.some((cb: any) => {
+        const cbStart = new Date(cb.startDate).toISOString().split('T')[0];
+        const cbEnd = cb.endDate ? new Date(cb.endDate).toISOString().split('T')[0] : cbStart;
+        return requestDates.some((dStr) => dStr >= cbStart && dStr <= cbEnd);
+      });
+
+      if (hasConflict) {
+        return res.status(400).json({
+          error: 'Cannot accept request: The requested dates conflict with an existing accepted booking.',
+        });
+      }
     }
 
     const updatedBooking = await prisma.booking.update({

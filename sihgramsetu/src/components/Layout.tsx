@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, ShoppingBag, MessageSquare, User, Sprout, Bell } from 'lucide-react';
+import { Home, Search, ShoppingBag, MessageSquare, User, Sprout, Bell, BarChart3 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTranslation } from '../locales/useTranslation';
@@ -11,25 +11,28 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  const { appMode, setAppMode, isAuthenticated, openConversationId, user, notifications } = useStore();
+  const { appMode, setAppMode, isAuthenticated, openConversationId, user, notifications, providerTab, setProviderTab } = useStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const { t } = useTranslation();
 
   // Unread count for the current user only
   const unreadCount = notifications.filter((n) => n.userId === user?.id && !n.isRead).length;
 
-  const fullNavItems = [
-    { label: t('nav.home'), path: '/', icon: Home },
-    { label: t('nav.search'), path: '/search', icon: Search },
-    { label: t('nav.bazaar'), path: '/bazaar', icon: ShoppingBag },
-    { label: t('nav.chat'), path: '/chat', icon: MessageSquare },
-    { label: t('nav.profile'), path: '/profile', icon: User },
-  ];
-
-  // Remove redundant Search item from Consumer mode bottom navigation
-  const navItems = appMode === 'consumer'
-    ? fullNavItems.filter((item) => item.path !== '/search')
-    : fullNavItems;
+  // Bottom navigation items setup
+  const navItems = appMode === 'provider'
+    ? [
+        { label: t('nav.home'), path: '/', icon: Home, isAnalytics: false },
+        { label: t('nav.bazaar'), path: '/bazaar', icon: ShoppingBag, isAnalytics: false },
+        { label: t('nav.chat'), path: '/chat', icon: MessageSquare, isAnalytics: false },
+        { label: '📊 Analytics', path: '/', icon: BarChart3, isAnalytics: true },
+        { label: t('nav.profile'), path: '/profile', icon: User, isAnalytics: false },
+      ]
+    : [
+        { label: t('nav.home'), path: '/', icon: Home, isAnalytics: false },
+        { label: t('nav.bazaar'), path: '/bazaar', icon: ShoppingBag, isAnalytics: false },
+        { label: t('nav.chat'), path: '/chat', icon: MessageSquare, isAnalytics: false },
+        { label: t('nav.profile'), path: '/profile', icon: User, isAnalytics: false },
+      ];
 
   // Show header and footer navigation only if authenticated and not on login/signup pages
   const isAuthRoute = ['/login', '/signup'].includes(location.pathname);
@@ -62,7 +65,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </span>
             </div>
 
-            {/* Mode Switcher Toggle + Bell + Avatar */}
+            {/* Mode Switcher Toggle + Bell (Consumer only) */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setAppMode(appMode === 'consumer' ? 'provider' : 'consumer')}
@@ -73,29 +76,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {appMode === 'consumer' ? t('header.consumerMode') : t('header.providerMode')}
               </button>
 
-              {/* Bell icon with unread badge */}
-              <button
-                onClick={() => setShowNotifications(true)}
-                type="button"
-                className="relative w-9 h-9 bg-cream-50 rounded-full flex items-center justify-center border border-cream-800 hover:bg-cream-100 transition-colors shadow-sm active:scale-90 outline-none"
-                aria-label="Notifications"
-              >
-                <Bell className="w-4.5 h-4.5 text-earth-700" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* User Avatar */}
-              <Link
-                to="/profile"
-                className="w-9 h-9 bg-cream-50 text-rural-green-800 rounded-full flex items-center justify-center font-bold border border-cream-800 hover:bg-cream-100 transition-colors shadow-sm"
-                aria-label="View Profile"
-              >
-                👤
-              </Link>
+              {/* Bell icon with unread badge (Consumer Mode only) */}
+              {appMode === 'consumer' && (
+                <button
+                  onClick={() => setShowNotifications(true)}
+                  type="button"
+                  className="relative w-9 h-9 bg-cream-50 rounded-full flex items-center justify-center border border-cream-800 hover:bg-cream-100 transition-colors shadow-sm active:scale-90 outline-none"
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-4.5 h-4.5 text-earth-700" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center leading-none shadow-md">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </header>
         )}
@@ -115,15 +111,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <nav className="absolute bottom-0 left-0 right-0 z-10 bg-cream-50 border-t border-cream-800 px-2 py-1.5 flex justify-around items-center select-none shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive =
-                item.path === '/'
-                  ? location.pathname === '/'
+              const isAnalyticsItem = item.isAnalytics;
+              const isActive = isAnalyticsItem
+                ? location.pathname === '/' && providerTab === 'analytics'
+                : item.path === '/'
+                  ? location.pathname === '/' && providerTab !== 'analytics'
                   : location.pathname.startsWith(item.path);
+
+              const handleClick = () => {
+                if (isAnalyticsItem) {
+                  setProviderTab('analytics');
+                } else if (item.path === '/' && appMode === 'provider' && providerTab === 'analytics') {
+                  setProviderTab('listings');
+                }
+              };
 
               return (
                 <Link
                   key={item.label}
                   to={item.path}
+                  onClick={handleClick}
                   className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all duration-150 relative min-w-[64px] min-h-[48px] ${
                     isActive
                       ? 'text-rural-green-800 font-bold scale-105'

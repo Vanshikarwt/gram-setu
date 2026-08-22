@@ -411,6 +411,19 @@ export const en: Locale = {
     titlePlaceholder: 'e.g. Mahindra Tractor 575 DI',
     descPlaceholder: 'Describe your listing...',
     locationPlaceholder: 'e.g. Karnal, Haryana',
+    // Photo upload
+    photosLabel: 'Photos *',
+    photosRequired: 'Upload at least 1 photo',
+    photosOptional: 'Photos (Optional)',
+    addPhoto: 'Add Photo',
+    photoRequired: 'Please upload at least one photo.',
+    // Availability dates
+    availabilityLabel: 'Availability Dates',
+    addDateLabel: 'Add Date',
+    noDateSelected: 'No dates selected',
+    invalidDate: 'Please enter a valid date.',
+    duplicateDate: 'This date is already added.',
+    pastDate: 'Please select a future date.',
   },
 
   emptyState: {

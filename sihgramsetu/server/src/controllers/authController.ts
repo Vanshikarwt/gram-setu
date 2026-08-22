@@ -126,3 +126,42 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ error: 'Server error fetching user profile' });
   }
 };
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { name, village, state, preferredLanguage, location } = req.body;
+
+    let newLocation = location;
+    if (!newLocation && (village || state)) {
+      const v = village ? String(village).trim() : '';
+      const s = state ? String(state).trim() : '';
+      newLocation = v && s ? `${v}, ${s}` : (v || s || undefined);
+    }
+
+    const updateData: any = {};
+    if (name) updateData.name = String(name).trim();
+    if (newLocation !== undefined) updateData.location = String(newLocation).trim();
+    if (preferredLanguage) updateData.preferredLanguage = String(preferredLanguage).trim();
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    const { password: _, ...userWithoutPassword } = updatedUser;
+
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      user: userWithoutPassword,
+    });
+  } catch (err: any) {
+    console.error('Update Profile Error:', err);
+    return res.status(500).json({ error: 'Server error updating profile' });
+  }
+};
