@@ -25,7 +25,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ onClose 
 
   const myNotifs = notifications
     .filter((n) => !n.userId || n.userId === user?.id)
-    .sort((a, b) => (new Date(b.createdAt ?? b.timestamp).getTime()) - (new Date(a.createdAt ?? a.timestamp).getTime()));
+    .sort((a, b) => b.timestamp - a.timestamp);
 
   const unreadCount = myNotifs.filter((n) => !n.isRead).length;
 

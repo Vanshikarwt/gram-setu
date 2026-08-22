@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Sprout } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import type { BazaarPost } from '../store/useStore';
 import { useTranslation } from '../locales/useTranslation';
 
 interface BazaarPostFormProps {

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { X, CalendarDays, Clock, IndianRupee, CheckCircle, Plus, Trash2, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, CalendarDays, Clock, CheckCircle, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Listing } from '../store/useStore';
 import { useTranslation } from '../locales/useTranslation';
@@ -325,7 +325,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ listing, onClose }) 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="flex items-center gap-1.5 text-xs font-extrabold text-earth-500 uppercase tracking-wider">
-                {t('booking.selectDates')} *
+                {t('booking.selectDates' as any)} *
               </label>
               <button
                 type="button"

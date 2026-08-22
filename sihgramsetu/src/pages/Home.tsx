@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Tractor, Leaf, HardHat, Warehouse, Package,
   SlidersHorizontal, X, Star, CalendarDays, Inbox, Plus,
-  ChevronRight, Loader2, MapPin, Navigation, ArrowLeft, BarChart3,
+  ChevronRight, Loader2, MapPin, Navigation, ArrowLeft,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { FriendlyEmptyState } from '../components/FriendlyEmptyState';
@@ -16,6 +16,7 @@ import { IncomingRequests } from '../components/IncomingRequests';
 import { ProviderAnalytics } from '../components/ProviderAnalytics';
 import type { Listing } from '../store/useStore';
 import { useTranslation } from '../locales/useTranslation';
+import type { FilterCategory } from '../components/FilterChips';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

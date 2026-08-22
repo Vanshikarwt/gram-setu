@@ -74,11 +74,6 @@ export const ProviderAnalytics: React.FC<ProviderAnalyticsProps> = ({
     (l) => l.providerId === user.id && l.status === 'active'
   ).length;
 
-  // Pending requests
-  const pendingRequests = bookings.filter(
-    (b) => myListingIds.includes(b.listingId) && b.status === 'pending'
-  ).length;
-
   const isEmpty = totalRevenue === 0 && jobsCompleted === 0;
   const forecasts = getDemandForecasts();
 

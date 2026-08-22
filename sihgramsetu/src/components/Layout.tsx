@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, ShoppingBag, MessageSquare, User, Sprout, Bell, BarChart3 } from 'lucide-react';
+import { Home, ShoppingBag, MessageSquare, User, Sprout, Bell, BarChart3 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTranslation } from '../locales/useTranslation';
