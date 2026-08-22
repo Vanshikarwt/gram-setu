@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(uuid())
+  phone            String         @unique
+  password         String
+  name             String
+  location         String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  listings         Listing[]
+  bazaarPosts      BazaarPost[]
+  conversations1   Conversation[] @relation("User1Conversations")
+  conversations2   Conversation[] @relation("User2Conversations")
+  sentMessages     Message[]      @relation("UserSentMessages")
+  consumerBookings Booking[]      @relation("ConsumerBookings")
+  providerBookings Booking[]      @relation("ProviderBookings")
+  reviews          Review[]
+  notifications    Notification[]
+}
+
+model Listing {
+  id          String    @id @default(uuid())
+  providerId  String
+  type        String    // 'machinery' | 'labor' | 'crop_residue' | 'storage' | 'agri_product'
+  title       String
+  description String
+  price       Float
+  hourlyPrice Float?    // Per-hour rate (e.g. 500)
+  dailyPrice  Float?    // Per-day rate (e.g. 3000)
+  unit        String    // 'per hour' | 'per day' | 'per quintal' | 'per tonne' | 'per kg' | 'per unit'
+  location    String
+  status      String    @default("active") // 'active' | 'inactive'
+  imageUrl    String?
+  category    String?   // sub-category within type (e.g. 'wheat', 'paddy', 'cold-storage', 'seed')
+  capacity    Float?    // for 'storage' listings: max capacity in tonnes
+  stock       Float?    // for 'agri_product' / 'crop_residue' listings: qty in stock
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+  reviews     Review[]
+
+  provider User @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model BazaarPost {
+  id        String   @id @default(uuid())
+  authorId  String
+  type      String   // 'need' | 'offer'
+  content   String
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  user1Id         String
+  user2Id         String
+  lastMessageText String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user1    User      @relation("User1Conversations", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2    User      @relation("User2Conversations", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  text           String
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id          String       @id @default(uuid())
+  listingId   String
+  consumerId  String
+  providerId  String
+  startDate   DateTime
+  endDate     DateTime?
+  quantity    Float
+  totalPrice  Float
+  bookingType String?      // 'hourly' | 'daily'
+  hours       Int?         // hours selected if hourly booking
+  days        Int?         // days selected if daily booking
+  rate        Float?       // rate applied at time of booking (hourly/daily)
+  status      String       @default("pending") // 'pending' | 'accepted' | 'rejected' | 'paid' | 'active' | 'completed'
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  transaction Transaction?
+  review      Review?
+
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  consumer User    @relation("ConsumerBookings", fields: [consumerId], references: [id], onDelete: Cascade)
+  provider User    @relation("ProviderBookings", fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  amount    Float
+  method    String   // 'UPI' | 'Card' | 'Cash'
+  status    String   @default("success")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  bookingId  String   @unique
+  listingId  String
+  consumerId String
+  rating     Int      // 1 - 5
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  consumer User    @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   @default("booking") // 'booking' | 'system'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

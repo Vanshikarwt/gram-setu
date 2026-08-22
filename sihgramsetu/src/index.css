@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Earthy Terracotta/Clay colors */
+  --color-earth-900: #3E2723;
+  --color-earth-800: #4E342E;
+  --color-earth-700: #5D4037;
+  --color-earth-600: #6D4C41;
+  --color-earth-500: #8D6E63;
+  --color-earth-400: #A1887F;
+  --color-earth-300: #BCAAA4;
+  --color-earth-200: #D7CCC8;
+  --color-earth-100: #EFEBE9;
+
+  /* Agricultural greens */
+  --color-rural-green-900: #1B4332;
+  --color-rural-green-800: #2D6A4F;
+  --color-rural-green-700: #40916C;
+  --color-rural-green-600: #52B788;
+  --color-rural-green-500: #74C69D;
+  --color-rural-green-400: #95D5B2;
+  --color-rural-green-300: #B7E4C7;
+  --color-rural-green-200: #D8F3DC;
+  --color-rural-green-100: #E8F5E9;
+  --color-rural-green-50: #F1F8F5;
+
+  /* Cream & Sand warm background tones */
+  --color-cream-950: #FAF5EB;
+  --color-cream-900: #F5EFEB;
+  --color-cream-800: #EBDCB9;
+  --color-cream-700: #D2C4A2;
+  --color-cream-50: #FCFBF7;
+
+  /* Warm accents: Wheat Gold & Terracotta Orange */
+  --color-harvest-gold: #DDA15E;
+  --color-harvest-gold-dark: #BC6C25;
+  --color-harvest-orange: #E07A5F;
+  --color-harvest-orange-dark: #C95A3E;
+
+  /* Primary branding mapping */
+  --color-primary: var(--color-rural-green-800);
+  --color-primary-light: var(--color-rural-green-100);
+  --color-secondary: var(--color-earth-700);
+  --color-accent: var(--color-harvest-gold-dark);
+  --color-bg-warm: var(--color-cream-950);
+
+  /* Typography override */
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream-900);
+    color: var(--color-earth-900);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Make tap targets clear and focus outlines visible for accessibility */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+    outline-color: var(--color-rural-green-600);
+  }
+}
+
+/* Custom scrollbars to look premium and consistent */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-cream-950);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rural-green-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rural-green-500);
+}
