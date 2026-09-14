@@ -19,34 +19,135 @@
 
 ## 📖 About The Project
 
-**GramSetu** (meaning *"Bridge to the Village"*) is a mobile-first web platform designed to empower Indian farmers by connecting them with a local ecosystem of agricultural resources. Farmers can list or discover:
+<div align="center">
 
-- 🚜 **Farm Machinery** — Tractors, tillers, harvesters available for hourly/daily hire  
-- 👷 **Labour** — Skilled agricultural workers available for seasonal or daily hire  
-- 🌾 **Crop Residue** — Buy/sell stubble, straw, and biomass  
-- 🏪 **Storage** — Cold storage and warehouse facilities  
-- 🛒 **Agri Products** — Seeds, fertilizers, tools, and produce  
+> **GramSetu** *(meaning "Bridge to the Village")* is a mobile-first marketplace that empowers Indian farmers by connecting them with a local ecosystem of agricultural services, machinery, labour, and buyers — built for **Smart India Hackathon (SIH)**.
 
-The platform features real-time chat, booking management, payment simulation, provider analytics, and full multilingual support in **Hindi**, **Hinglish**, and **English** — making it truly accessible to rural users.
+</div>
+
+<br/>
+
+### 🌱 What can you list or discover on GramSetu?
+
+<table>
+  <tr>
+    <td align="center" width="20%">
+      <br/>
+      <b>🚜 Farm Machinery</b>
+      <br/><sub>Tractors, tillers & harvesters<br/>available for hourly / daily hire</sub>
+      <br/><br/>
+    </td>
+    <td align="center" width="20%">
+      <br/>
+      <b>👷 Skilled Labour</b>
+      <br/><sub>Agricultural workers available<br/>for seasonal or daily hire</sub>
+      <br/><br/>
+    </td>
+    <td align="center" width="20%">
+      <br/>
+      <b>🌾 Crop Residue</b>
+      <br/><sub>Buy & sell stubble, straw<br/>and biomass</sub>
+      <br/><br/>
+    </td>
+    <td align="center" width="20%">
+      <br/>
+      <b>🏪 Storage Facilities</b>
+      <br/><sub>Cold storage & warehouse<br/>solutions</sub>
+      <br/><br/>
+    </td>
+    <td align="center" width="20%">
+      <br/>
+      <b>🛒 Agri Products</b>
+      <br/><sub>Seeds, fertilizers, tools<br/>& fresh produce</sub>
+      <br/><br/>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+<div align="center">
+
+| 🌐 Multilingual | ⚡ Real-time Chat | 📱 Mobile-First | 🇮🇳 Made for India |
+|:---:|:---:|:---:|:---:|
+| English · हिंदी · Hinglish | Socket.IO powered | Responsive on all devices | Built for SIH 2024–25 |
+
+</div>
 
 ---
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| 🔐 **Auth** | Phone-based signup/login with JWT authentication |
-| 🗂️ **Listings** | Create, browse, and filter service/product listings |
-| 📅 **Bookings** | Hourly/daily booking with status tracking (pending → accepted → paid → completed) |
-| 💬 **Real-time Chat** | Socket.IO powered 1-on-1 messaging between users |
-| 💳 **Payment Gateway** | Simulated UPI / Card / Cash payment flow |
-| ⭐ **Reviews** | Post-booking rating and review system |
-| 🔔 **Notifications** | In-app notification panel for booking updates |
-| 📊 **Provider Analytics** | Revenue, bookings, and rating insights for service providers |
-| 🌐 **Multilingual UI** | Full support for English, Hindi (हिंदी), and Hinglish |
-| 🏪 **Bazaar** | Community bulletin board for buy/sell/need posts |
-| 🔍 **Smart Search** | Filter by type, price, location, and availability |
-| 🗺️ **Mock Tracking** | Simulated order tracking for hired services |
+<div align="center">
+
+### Core Platform Features
+
+</div>
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔐 Authentication</h3>
+      <p>Phone-number based signup & login secured with <b>bcrypt</b> password hashing and <b>JWT</b> tokens. Protected routes ensure only verified users can access the platform.</p>
+    </td>
+    <td width="50%">
+      <h3>🗂️ Listings Marketplace</h3>
+      <p>Providers create rich listings with images, pricing (hourly / daily / per-unit), availability dates, and category tags. Consumers browse, filter, and view full listing detail pages.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📅 Booking Management</h3>
+      <p>Full booking lifecycle from request to completion:<br/>
+      <code>pending</code> → <code>accepted</code> → <code>paid</code> → <code>active</code> → <code>completed</code><br/>
+      Supports both <b>hourly</b> and <b>daily</b> booking types with flexible pricing.</p>
+    </td>
+    <td width="50%">
+      <h3>💬 Real-time Chat</h3>
+      <p>1-on-1 conversations powered by <b>Socket.IO</b> with JWT-authenticated socket connections. Buyers and sellers negotiate directly before committing to a booking.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>💳 Payment Gateway</h3>
+      <p>Simulated multi-method payment flow supporting <b>UPI</b>, <b>Card</b>, and <b>Cash</b>. Every transaction is recorded and linked to its booking for full traceability.</p>
+    </td>
+    <td width="50%">
+      <h3>⭐ Reviews & Ratings</h3>
+      <p>Post-booking review system with 1–5 star ratings and comments. Ratings are tied to individual listings, building trust across the rural marketplace.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📊 Provider Analytics</h3>
+      <p>A dedicated provider dashboard with insights on total revenue, booking counts, average ratings, and listing performance — helping farmers make data-driven decisions.</p>
+    </td>
+    <td width="50%">
+      <h3>🔔 Notifications</h3>
+      <p>In-app notification panel keeps users informed of booking status changes, new requests, and system messages in real time — no refresh needed.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🏪 Gram Bazaar</h3>
+      <p>A community bulletin board where anyone can post <b>needs</b> or <b>offers</b> — a local classifieds board for the village economy, bridging informal rural trade.</p>
+    </td>
+    <td width="50%">
+      <h3>🔍 Smart Search</h3>
+      <p>Filter listings by <b>type</b>, <b>price range</b>, <b>location</b>, and <b>availability</b>. The search UI is designed with icon-first interactions for low-literacy users.</p>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+<div align="center">
+
+| 🗺️ Mock Order Tracking | 🌐 3-Language UI | 🔒 JWT Auth | ⚡ Socket.IO |
+|:---:|:---:|:---:|:---:|
+| Simulated live tracking for hired services | English · हिंदी · Hinglish | Secure token-based sessions | Real-time bidirectional chat |
+
+</div>
 
 ---
 
