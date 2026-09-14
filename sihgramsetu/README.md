@@ -1,32 +1,342 @@
-# React + TypeScript + Vite
+# 🌾 GramSetu — Bridging Rural Agriculture
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+<div align="center">
 
-Currently, two official plugins are available:
+![GramSetu](https://img.shields.io/badge/GramSetu-Rural%20AgriTech-22c55e?style=for-the-badge&logo=leaf&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Prisma-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**A full-stack marketplace platform connecting rural farmers with agricultural services, machinery, labour, and buyers — built for Smart India Hackathon (SIH).**
 
-## React Compiler
+[Live Demo](#) · [Report a Bug](#) · [Request Feature](#)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+</div>
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## 📖 About The Project
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+**GramSetu** (meaning *"Bridge to the Village"*) is a mobile-first web platform designed to empower Indian farmers by connecting them with a local ecosystem of agricultural resources. Farmers can list or discover:
+
+- 🚜 **Farm Machinery** — Tractors, tillers, harvesters available for hourly/daily hire  
+- 👷 **Labour** — Skilled agricultural workers available for seasonal or daily hire  
+- 🌾 **Crop Residue** — Buy/sell stubble, straw, and biomass  
+- 🏪 **Storage** — Cold storage and warehouse facilities  
+- 🛒 **Agri Products** — Seeds, fertilizers, tools, and produce  
+
+The platform features real-time chat, booking management, payment simulation, provider analytics, and full multilingual support in **Hindi**, **Hinglish**, and **English** — making it truly accessible to rural users.
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 🔐 **Auth** | Phone-based signup/login with JWT authentication |
+| 🗂️ **Listings** | Create, browse, and filter service/product listings |
+| 📅 **Bookings** | Hourly/daily booking with status tracking (pending → accepted → paid → completed) |
+| 💬 **Real-time Chat** | Socket.IO powered 1-on-1 messaging between users |
+| 💳 **Payment Gateway** | Simulated UPI / Card / Cash payment flow |
+| ⭐ **Reviews** | Post-booking rating and review system |
+| 🔔 **Notifications** | In-app notification panel for booking updates |
+| 📊 **Provider Analytics** | Revenue, bookings, and rating insights for service providers |
+| 🌐 **Multilingual UI** | Full support for English, Hindi (हिंदी), and Hinglish |
+| 🏪 **Bazaar** | Community bulletin board for buy/sell/need posts |
+| 🔍 **Smart Search** | Filter by type, price, location, and availability |
+| 🗺️ **Mock Tracking** | Simulated order tracking for hired services |
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|---|---|
+| [React 19](https://react.dev/) | UI framework |
+| [TypeScript 6](https://www.typescriptlang.org/) | Type-safe development |
+| [Vite 8](https://vite.dev/) | Build tool & dev server |
+| [Tailwind CSS 4](https://tailwindcss.com/) | Utility-first styling |
+| [React Router 7](https://reactrouter.com/) | Client-side routing |
+| [Zustand](https://zustand-demo.pmnd.rs/) | Global state management |
+| [Lucide React](https://lucide.dev/) | Icon library |
+
+### Backend
+| Technology | Purpose |
+|---|---|
+| [Node.js + Express](https://expressjs.com/) | REST API server |
+| [TypeScript](https://www.typescriptlang.org/) | Type-safe server code |
+| [Socket.IO](https://socket.io/) | Real-time bidirectional chat |
+| [Prisma ORM](https://www.prisma.io/) | Database schema and queries |
+| [MongoDB](https://www.mongodb.com/) | Primary database (Atlas) |
+| [bcryptjs](https://github.com/dcodeIO/bcrypt.js) | Password hashing |
+| [JSON Web Token](https://jwt.io/) | Auth token management |
+
+### Infrastructure
+| Service | Purpose |
+|---|---|
+| [Vercel](https://vercel.com/) | Frontend deployment |
+| [Railway](https://railway.app/) / [Render](https://render.com/) | Backend deployment |
+| [MongoDB Atlas](https://www.mongodb.com/atlas) | Cloud database |
+
+---
+
+## 🗂️ Project Structure
+
+```
+sihgramsetu/
+├── src/                        # Frontend source
+│   ├── components/             # Reusable UI components
+│   │   ├── Layout.tsx          # App shell with bottom nav
+│   │   ├── ListingCard.tsx     # Service listing card
+│   │   ├── ListingForm.tsx     # Create/edit listing form
+│   │   ├── BookingModal.tsx    # Booking flow modal
+│   │   ├── PaymentGateway.tsx  # Payment simulation UI
+│   │   ├── ChatScreen.tsx      # Real-time chat interface
+│   │   ├── ProviderAnalytics.tsx # Provider dashboard
+│   │   ├── IncomingRequests.tsx  # Booking request management
+│   │   ├── SearchBar.tsx       # Smart search & filters
+│   │   └── ...                 # (20 components total)
+│   ├── pages/                  # Route-level pages
+│   │   ├── Home.tsx            # Landing / dashboard
+│   │   ├── Search.tsx          # Browse & discover listings
+│   │   ├── Bazaar.tsx          # Community buy/sell board
+│   │   ├── Chat.tsx            # Messaging hub
+│   │   ├── Profile.tsx         # User profile & settings
+│   │   ├── Login.tsx           # Authentication
+│   │   ├── Signup.tsx          # Registration
+│   │   └── LanguageSelect.tsx  # Language onboarding
+│   ├── locales/                # i18n translations
+│   │   ├── en.ts               # English strings
+│   │   ├── hi.ts               # Hindi (हिंदी) strings
+│   │   └── hinglish.ts         # Hinglish strings
+│   ├── store/
+│   │   └── useStore.ts         # Zustand global state
+│   └── utils/
+│       └── api.ts              # Axios API client
+│
+└── server/                     # Backend source
+    ├── src/
+    │   ├── index.ts            # Express + Socket.IO server entry
+    │   ├── socket.ts           # Socket.IO event handlers
+    │   ├── prisma.ts           # Prisma client singleton
+    │   ├── routes/             # Express route definitions
+    │   │   ├── authRoutes.ts
+    │   │   ├── listingRoutes.ts
+    │   │   ├── bookingRoutes.ts
+    │   │   ├── chatRoutes.ts
+    │   │   ├── paymentRoutes.ts
+    │   │   ├── reviewRoutes.ts
+    │   │   ├── notificationRoutes.ts
+    │   │   ├── analyticsRoutes.ts
+    │   │   └── insightsRoutes.ts
+    │   ├── controllers/        # Request handlers
+    │   └── middlewares/        # Auth & validation middleware
+    └── prisma/
+        └── schema.prisma       # MongoDB data models
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) v18+
+- [npm](https://www.npmjs.com/) v9+
+- A [MongoDB Atlas](https://www.mongodb.com/atlas) cluster (free tier works)
+
+---
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Vanshikarwt/gram-setu.git
+cd gram-setu/sihgramsetu
+```
+
+---
+
+### 2. Setup the Backend
+
+```bash
+cd server
+npm install
+```
+
+Create a `.env` file inside `server/`:
+
+```env
+PORT=5000
+DATABASE_URL="mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/gramsetu?retryWrites=true&w=majority"
+JWT_SECRET="your_super_secret_jwt_key"
+CLIENT_URL="http://localhost:5173"
+```
+
+> 💡 Copy from `server/.env.example` as a starting point.
+
+Generate the Prisma client and start the dev server:
+
+```bash
+npm run dev
+```
+
+The backend API will be running at **http://localhost:5000**
+
+---
+
+### 3. Setup the Frontend
+
+Open a new terminal in the project root (`sihgramsetu/`):
+
+```bash
+npm install
+```
+
+Create a `.env` file in the root:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+> 💡 Copy from `.env.example` as a starting point.
+
+Start the dev server:
+
+```bash
+npm run dev
+```
+
+The frontend will be running at **http://localhost:5173**
+
+---
+
+## 🌐 API Endpoints
+
+All API routes are prefixed with `/api`.
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Register new user | ❌ |
+| `POST` | `/api/auth/login` | Login & receive JWT | ❌ |
+| `GET` | `/api/auth/me` | Get current user profile | ✅ |
+| `GET` | `/api/listings` | Browse all listings | ✅ |
+| `POST` | `/api/listings` | Create a new listing | ✅ |
+| `PUT` | `/api/listings/:id` | Update a listing | ✅ |
+| `DELETE` | `/api/listings/:id` | Delete a listing | ✅ |
+| `POST` | `/api/bookings` | Create a booking | ✅ |
+| `GET` | `/api/bookings/incoming` | Provider's incoming requests | ✅ |
+| `GET` | `/api/bookings/my` | Consumer's bookings | ✅ |
+| `PUT` | `/api/bookings/:id/status` | Accept / reject booking | ✅ |
+| `POST` | `/api/payments` | Process a payment | ✅ |
+| `POST` | `/api/reviews` | Submit a review | ✅ |
+| `GET` | `/api/chat/conversations` | List all conversations | ✅ |
+| `GET` | `/api/chat/:conversationId/messages` | Get messages | ✅ |
+| `GET` | `/api/bazaar` | Get bazaar posts | ✅ |
+| `POST` | `/api/bazaar` | Create a bazaar post | ✅ |
+| `GET` | `/api/analytics` | Provider analytics data | ✅ |
+| `GET` | `/api/notifications` | Get notifications | ✅ |
+| `GET` | `/api/health` | Server health check | ❌ |
+
+---
+
+## 🗄️ Data Models
+
+```
+User ──< Listing ──< Booking >── Transaction
+  |                     |
+  |──< BazaarPost       └──< Review
+  |
+  |──< Conversation >── Message
+  |
+  └──< Notification
+```
+
+Key models: **User**, **Listing**, **Booking**, **Transaction**, **Review**, **Conversation**, **Message**, **BazaarPost**, **Notification**
+
+---
+
+## 🌍 Multilingual Support
+
+GramSetu ships with full UI translations in three languages, selectable at onboarding:
+
+| Code | Language | Script |
+|---|---|---|
+| `en` | English | Latin |
+| `hi` | Hindi | देवनागरी |
+| `hinglish` | Hinglish | Latin (mixed) |
+
+All UI strings live in `src/locales/` and are consumed via the `useTranslation` hook. Adding a new language requires only a new locale file and a one-line registration in `src/locales/index.ts`.
+
+---
+
+## ☁️ Deployment
+
+### Frontend → Vercel
+
+1. Import repo into [Vercel](https://vercel.com/)
+2. Set **Root Directory** to `sihgramsetu`
+3. Add environment variable: `VITE_API_URL=<your-backend-url>`
+4. Deploy — `vercel.json` handles SPA routing rewrites automatically
+
+### Backend → Railway or Render
+
+1. Create a new service pointing to the `sihgramsetu/server` directory
+2. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`, `PORT`
+3. Build command: `npm run build && npx prisma generate`
+4. Start command: `node dist/index.js`
+
+---
+
+## 📜 Available Scripts
+
+### Frontend (`sihgramsetu/`)
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Type-check & build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run Oxlint code linter |
+
+### Backend (`sihgramsetu/server/`)
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start server with hot-reload (ts-node-dev) |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm start` | Run compiled production server |
+| `npm run db:studio` | Open Prisma Studio (DB GUI) |
+| `npm run db:generate` | Regenerate Prisma client |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "feat: add your feature"`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 🏆 Built For
+
+This project was built as part of **Smart India Hackathon (SIH)** to address the challenge of connecting rural farmers with accessible agricultural services and resources across India.
+
+---
+
+<div align="center">
+Made with ❤️ for Indian Farmers 🇮🇳
+</div>
